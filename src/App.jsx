@@ -9,6 +9,7 @@ import Schedule from './components/Schedule';
 import Settings from './components/Settings';
 import GoogleSheetsSync from './components/GoogleSheetsSync';
 import CloudSync from './components/CloudSync';
+import SupabaseSync from './components/SupabaseSync';
 import Login from './components/Login';
 import AuthSettings from './components/AuthSettings';
 
@@ -18,7 +19,8 @@ const TABS = [
   { id: 'schedule', label: '📅 Schedule', icon: '📅', roles: ['admin'] },
   { id: 'payments', label: '💰 Payments', icon: '💰', roles: ['admin'] },
   { id: 'reminders', label: '📱 Reminders', icon: '📱', roles: ['admin'] },
-  { id: 'cloud', label: '☁️ Cloud', icon: '☁️', roles: ['admin'] },
+  { id: 'database', label: '🗄️ Database', icon: '🗄️', roles: ['admin'] },
+  { id: 'cloud', label: '☁️ JSONBin', icon: '☁️', roles: ['admin'] },
   { id: 'sync', label: '📊 Sheets', icon: '📊', roles: ['admin'] },
   { id: 'settings', label: '⚙️ Settings', icon: '⚙️', roles: ['admin'] },
   { id: 'auth', label: '🔐 Auth', icon: '🔐', roles: ['admin'] },
@@ -90,6 +92,13 @@ Thank you! 🙏`,
         return <Payments members={membersCloud.data} payments={paymentsCloud.data} setPayments={paymentsCloud.setData} settings={settingsCloud.data} />;
       case 'reminders':
         return <Reminders members={membersCloud.data} payments={paymentsCloud.data} settings={settingsCloud.data} />;
+      case 'database':
+        return <SupabaseSync 
+          membersCloud={membersCloud}
+          paymentsCloud={paymentsCloud}
+          scheduleCloud={scheduleCloud}
+          settingsCloud={settingsCloud}
+        />;
       case 'cloud':
         return <CloudSync 
           membersCloud={membersCloud}
