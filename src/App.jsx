@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AuthProvider, useAuth } from './hooks/useAuth';
+import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { useCloudStorage } from './hooks/useCloudStorage';
 import Dashboard from './components/Dashboard';
 import Members from './components/Members';
