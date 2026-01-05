@@ -59,19 +59,26 @@ Thank you! 🙏`,
   });
 
   // Show login if authentication is required and user is not authenticated
-  if (authSettings.requireAuth && !isAuthenticated) {
+  if (authSettings?.requireAuth && !isAuthenticated) {
     return <Login />;
   }
 
   // Filter tabs based on user role
-  const availableTabs = TABS.filter(tab => 
-    !user || tab.roles.includes(user.role)
-  );
+  const availableTabs = TABS.filter(tab => {
+    // If no authentication is required, show all tabs
+    if (!authSettings?.requireAuth) return true;
+    // If authentication is required but no user, show no tabs (will show login)
+    if (!user) return false;
+    // Filter by user role
+    return tab.roles.includes(user.role);
+  });
 
   const renderContent = () => {
     // Check permission for current tab
     const currentTab = TABS.find(tab => tab.id === activeTab);
-    if (currentTab && user && !currentTab.roles.includes(user.role)) {
+    
+    // If authentication is required and user doesn't have permission
+    if (authSettings?.requireAuth && currentTab && user && !currentTab.roles.includes(user.role)) {
       return (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🔒</div>
