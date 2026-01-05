@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
+import { useCloudStorage } from './hooks/useCloudStorage';
 import Dashboard from './components/Dashboard';
 import Members from './components/Members';
 import Payments from './components/Payments';
@@ -7,6 +8,7 @@ import Reminders from './components/Reminders';
 import Schedule from './components/Schedule';
 import Settings from './components/Settings';
 import GoogleSheetsSync from './components/GoogleSheetsSync';
+import CloudSync from './components/CloudSync';
 
 const TABS = [
   { id: 'dashboard', label: '📊 Dashboard', icon: '📊' },
@@ -14,16 +16,19 @@ const TABS = [
   { id: 'schedule', label: '📅 Schedule', icon: '📅' },
   { id: 'payments', label: '💰 Payments', icon: '💰' },
   { id: 'reminders', label: '📱 Reminders', icon: '📱' },
-  { id: 'sync', label: '☁️ Sync', icon: '☁️' },
+  { id: 'cloud', label: '☁️ Cloud', icon: '☁️' },
+  { id: 'sync', label: '📊 Sheets', icon: '📊' },
   { id: 'settings', label: '⚙️ Settings', icon: '⚙️' },
 ];
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [members, setMembers] = useLocalStorage('badminton-members', []);
-  const [payments, setPayments] = useLocalStorage('badminton-payments', []);
-  const [schedule, setSchedule] = useLocalStorage('badminton-schedule', []);
-  const [settings, setSettings] = useLocalStorage('badminton-settings', {
+  
+  // Use cloud storage for all data
+  const membersCloud = useCloudStorage('badminton-members', []);
+  const paymentsCloud = useCloudStorage('badminton-payments', []);
+  const scheduleCloud = useCloudStorage('badminton-schedule', []);
+  const settingsCloud = useCloudStorage('badminton-settings', {
     clubName: 'Badminton Club',
     monthlyFee: '50',
     bankName: 'Maybank',
@@ -50,21 +55,28 @@ Thank you! 🙏`,
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard members={members} payments={payments} settings={settings} />;
+        return <Dashboard members={membersCloud.data} payments={paymentsCloud.data} settings={settingsCloud.data} />;
       case 'members':
-        return <Members members={members} setMembers={setMembers} />;
+        return <Members members={membersCloud.data} setMembers={membersCloud.setData} />;
       case 'schedule':
-        return <Schedule members={members} schedule={schedule} setSchedule={setSchedule} />;
+        return <Schedule members={membersCloud.data} schedule={scheduleCloud.data} setSchedule={scheduleCloud.setData} />;
       case 'payments':
-        return <Payments members={members} payments={payments} setPayments={setPayments} settings={settings} />;
+        return <Payments members={membersCloud.data} payments={paymentsCloud.data} setPayments={paymentsCloud.setData} settings={settingsCloud.data} />;
       case 'reminders':
-        return <Reminders members={members} payments={payments} settings={settings} />;
+        return <Reminders members={membersCloud.data} payments={paymentsCloud.data} settings={settingsCloud.data} />;
+      case 'cloud':
+        return <CloudSync 
+          membersCloud={membersCloud}
+          paymentsCloud={paymentsCloud}
+          scheduleCloud={scheduleCloud}
+          settingsCloud={settingsCloud}
+        />;
       case 'sync':
-        return <GoogleSheetsSync members={members} payments={payments} setMembers={setMembers} setPayments={setPayments} />;
+        return <GoogleSheetsSync members={membersCloud.data} payments={paymentsCloud.data} setMembers={membersCloud.setData} setPayments={paymentsCloud.setData} />;
       case 'settings':
-        return <Settings settings={settings} setSettings={setSettings} />;
+        return <Settings settings={settingsCloud.data} setSettings={settingsCloud.setData} />;
       default:
-        return <Dashboard members={members} payments={payments} settings={settings} />;
+        return <Dashboard members={membersCloud.data} payments={paymentsCloud.data} settings={settingsCloud.data} />;
     }
   };
 
@@ -74,7 +86,7 @@ Thank you! 🙏`,
       <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-6">
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            🏸 {settings.clubName}
+            🏸 {settingsCloud.data.clubName}
           </h1>
           <p className="text-blue-200 text-sm mt-1">Track payments, schedule sessions, send WhatsApp reminders</p>
         </div>
@@ -108,7 +120,7 @@ Thank you! 🙏`,
 
       {/* Footer */}
       <footer className="bg-gray-800 text-gray-400 text-center py-4 mt-8">
-        <p className="text-sm">{settings.clubName} Payment Tracker © 2026</p>
+        <p className="text-sm">{settingsCloud.data.clubName} Payment Tracker © 2026</p>
       </footer>
     </div>
   );
