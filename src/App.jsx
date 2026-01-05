@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useLocalStorage } from './hooks/useLocalStorage';
+import { AuthProvider, useAuth } from './hooks/useAuth';
 import { useCloudStorage } from './hooks/useCloudStorage';
 import Dashboard from './components/Dashboard';
 import Members from './components/Members';
@@ -9,19 +9,23 @@ import Schedule from './components/Schedule';
 import Settings from './components/Settings';
 import GoogleSheetsSync from './components/GoogleSheetsSync';
 import CloudSync from './components/CloudSync';
+import Login from './components/Login';
+import AuthSettings from './components/AuthSettings';
 
 const TABS = [
-  { id: 'dashboard', label: '📊 Dashboard', icon: '📊' },
-  { id: 'members', label: '👥 Members', icon: '👥' },
-  { id: 'schedule', label: '📅 Schedule', icon: '📅' },
-  { id: 'payments', label: '💰 Payments', icon: '💰' },
-  { id: 'reminders', label: '📱 Reminders', icon: '📱' },
-  { id: 'cloud', label: '☁️ Cloud', icon: '☁️' },
-  { id: 'sync', label: '📊 Sheets', icon: '📊' },
-  { id: 'settings', label: '⚙️ Settings', icon: '⚙️' },
+  { id: 'dashboard', label: '📊 Dashboard', icon: '📊', roles: ['admin', 'member'] },
+  { id: 'members', label: '👥 Members', icon: '👥', roles: ['admin'] },
+  { id: 'schedule', label: '📅 Schedule', icon: '📅', roles: ['admin'] },
+  { id: 'payments', label: '💰 Payments', icon: '💰', roles: ['admin'] },
+  { id: 'reminders', label: '📱 Reminders', icon: '📱', roles: ['admin'] },
+  { id: 'cloud', label: '☁️ Cloud', icon: '☁️', roles: ['admin'] },
+  { id: 'sync', label: '📊 Sheets', icon: '📊', roles: ['admin'] },
+  { id: 'settings', label: '⚙️ Settings', icon: '⚙️', roles: ['admin'] },
+  { id: 'auth', label: '🔐 Auth', icon: '🔐', roles: ['admin'] },
 ];
 
-export default function App() {
+function AppContent() {
+  const { isAuthenticated, authSettings, user, hasPermission } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   
   // Use cloud storage for all data
@@ -52,7 +56,29 @@ Thank you! 🙏`,
     reminderDays: '3'
   });
 
+  // Show login if authentication is required and user is not authenticated
+  if (authSettings.requireAuth && !isAuthenticated) {
+    return <Login />;
+  }
+
+  // Filter tabs based on user role
+  const availableTabs = TABS.filter(tab => 
+    !user || tab.roles.includes(user.role)
+  );
+
   const renderContent = () => {
+    // Check permission for current tab
+    const currentTab = TABS.find(tab => tab.id === activeTab);
+    if (currentTab && user && !currentTab.roles.includes(user.role)) {
+      return (
+        <div className="text-center py-12">
+          <div className="text-6xl mb-4">🔒</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Access Denied</h2>
+          <p className="text-gray-600">You don't have permission to access this section.</p>
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard members={membersCloud.data} payments={paymentsCloud.data} settings={settingsCloud.data} />;
@@ -75,6 +101,8 @@ Thank you! 🙏`,
         return <GoogleSheetsSync members={membersCloud.data} payments={paymentsCloud.data} setMembers={membersCloud.setData} setPayments={paymentsCloud.setData} />;
       case 'settings':
         return <Settings settings={settingsCloud.data} setSettings={settingsCloud.setData} />;
+      case 'auth':
+        return <AuthSettings />;
       default:
         return <Dashboard members={membersCloud.data} payments={paymentsCloud.data} settings={settingsCloud.data} />;
     }
@@ -85,10 +113,21 @@ Thank you! 🙏`,
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            🏸 {settingsCloud.data.clubName}
-          </h1>
-          <p className="text-blue-200 text-sm mt-1">Track payments, schedule sessions, send WhatsApp reminders</p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                🏸 {settingsCloud.data.clubName}
+              </h1>
+              <p className="text-blue-200 text-sm mt-1">Track payments, schedule sessions, send WhatsApp reminders</p>
+            </div>
+            {user && (
+              <div className="text-right">
+                <p className="text-blue-200 text-sm">Welcome back,</p>
+                <p className="font-semibold">{user.name}</p>
+                <p className="text-blue-300 text-xs">({user.role})</p>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
@@ -96,7 +135,7 @@ Thank you! 🙏`,
       <nav className="bg-white shadow-md sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex overflow-x-auto">
-            {TABS.map(tab => (
+            {availableTabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -123,5 +162,13 @@ Thank you! 🙏`,
         <p className="text-sm">{settingsCloud.data.clubName} Payment Tracker © 2026</p>
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
